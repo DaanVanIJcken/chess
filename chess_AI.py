@@ -13,10 +13,7 @@ def pos_neg(x):
 
 
 def possible_moves(current_pos: tuple, board: list) -> list:
-    try:
-        if board[current_pos[0]][current_pos[1]] == ' ':
-            return []
-    except IndexError:
+    if board[current_pos[0]][current_pos[1]] == ' ':
         return []
     piece, to_return = board[current_pos[0]][current_pos[1]], []
 
