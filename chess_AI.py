@@ -12,45 +12,43 @@ def pos_neg(x):
         return 0
 
 
-def possible_moves(CurrentPos: tuple, board: list) -> list:
+def possible_moves(current_pos: tuple, board: list) -> list:
     try:
-        if board[CurrentPos[0]][CurrentPos[1]] == ' ':
+        if board[current_pos[0]][current_pos[1]] == ' ':
             return []
-    except NameError:
-        return []
     except IndexError:
         return []
-    piece, to_return = board[CurrentPos[0]][CurrentPos[1]], []
+    piece, to_return = board[current_pos[0]][current_pos[1]], []
 
     if 'pawn' in piece:
         if 'w_' in piece:
-            if CurrentPos[0] == 6:
+            if current_pos[0] == 6:
                 returnable = [(-1, 0), (-2, 0)]
             else:
                 returnable = [(-1, 0)]
             try:
-                if board[CurrentPos[0] - 1][CurrentPos[1] - 1][0] == 'b':
-                    to_return.append((CurrentPos[0] - 1, CurrentPos[1] - 1))
+                if board[current_pos[0] - 1][current_pos[1] - 1][0] == 'b':
+                    to_return.append((current_pos[0] - 1, current_pos[1] - 1))
             except IndexError:
                 pass
             try:
-                if board[CurrentPos[0] - 1][CurrentPos[1] + 1][0] == 'b':
-                    to_return.append((CurrentPos[0] - 1, CurrentPos[1] + 1))
+                if board[current_pos[0] - 1][current_pos[1] + 1][0] == 'b':
+                    to_return.append((current_pos[0] - 1, current_pos[1] + 1))
             except IndexError:
                 pass
         else:
-            if CurrentPos[0] == 1:
+            if current_pos[0] == 1:
                 returnable = [(1, 0), (2, 0)]
             else:
                 returnable = [(1, 0)]
             try:
-                if board[CurrentPos[0] + 1][CurrentPos[1] - 1][0] == 'w':
-                    to_return.append((CurrentPos[0] + 1, CurrentPos[1] - 1))
+                if board[current_pos[0] + 1][current_pos[1] - 1][0] == 'w':
+                    to_return.append((current_pos[0] + 1, current_pos[1] - 1))
             except IndexError:
                 pass
             try:
-                if board[CurrentPos[0] + 1][CurrentPos[1] + 1][0] == 'w':
-                    to_return.append((CurrentPos[0] + 1, CurrentPos[1] + 1))
+                if board[current_pos[0] + 1][current_pos[1] + 1][0] == 'w':
+                    to_return.append((current_pos[0] + 1, current_pos[1] + 1))
             except IndexError:
                 pass
     if 'knight' in piece:
@@ -73,23 +71,21 @@ def possible_moves(CurrentPos: tuple, board: list) -> list:
     for (coord1, coord2) in returnable:
         # looks if the first spot in this row is empty
         no_knight = 'knight' not in piece
-        condition1 = (not (board[CurrentPos[0]
-                                 + pos_neg(coord1)][CurrentPos[1]
+        condition1 = (not (board[current_pos[0]
+                                 + pos_neg(coord1)][current_pos[1]
                                                     + pos_neg(coord2)][0] in
                            [' ', ('b' if 'w_' in piece else 'w')]) and
                       no_knight)
         # checks if spot is empty
-        condition2 = (not (board[CurrentPos[0]
-                                 + coord1][CurrentPos[1]
+        condition2 = (not (board[current_pos[0]
+                                 + coord1][current_pos[1]
                                            + coord2][0] in
                            [' ', 'b' if 'w_' in piece else 'w']))
         # checks if the total of both is < 0, or checks that it cant hit forward for a pawn
-        condition3_1 = (CurrentPos[0] + coord1 < 0) or (CurrentPos[1] + coord2 < 0)
-        pawn = 'pawn' in piece
-        condition3_2 = not (
-            pawn and coord2 == 0 and board[CurrentPos[0] + coord1]
-            [CurrentPos[1] + coord2][0] in ('b' if 'w_' in piece else 'w'))
-        condition3 = condition3_1 and condition3_2
+        condition3_1 = (current_pos[0] + coord1 < 0) or (current_pos[1] + coord2 < 0)
+        condition3_2 = ('pawn' in piece and coord2 == 0 and board[current_pos[0] + coord1]
+            [current_pos[1] + coord2][0] in ('b' if 'w_' in piece else 'w'))
+        condition3 = condition3_1 or condition3_2
         try:
             if condition1 or condition2 or condition3:
                 continue
@@ -97,29 +93,28 @@ def possible_moves(CurrentPos: tuple, board: list) -> list:
             if 'knight' not in piece:
                 # checks if the spots till the desired pos are all empty... (extension of the first check)
                 if any([True
-                        for a in range(min(CurrentPos[0] + coord1,
-                                           CurrentPos[0])
+                        for a in range(min(current_pos[0] + coord1,
+                                           current_pos[0])
                                                + (0 if coord1 == 0 else 1),
-                                       max(CurrentPos[0] + coord1,
-                                           CurrentPos[0])
+                                       max(current_pos[0] + coord1,
+                                           current_pos[0])
                                                + (1 if coord1 == 0 else 0))
-                        for b in range(min(CurrentPos[1] + coord2,
-                                           CurrentPos[1])
+                        for b in range(min(current_pos[1] + coord2,
+                                           current_pos[1])
                                                + (0 if coord2 == 0 else 1),
-                                       max(CurrentPos[1] + coord2,
-                                           CurrentPos[1]) + (
+                                       max(current_pos[1] + coord2,
+                                           current_pos[1]) + (
                                                1 if coord2 == 0 else 0))
-                        if not (Board[a][b] in [' ', ('b' if 'w_' in piece
-                                                      else 'w')]) and (
-                        not ('bishop' in piece) or (CurrentPos[0] + a) *
-                                (CurrentPos[0] + a) == (CurrentPos[1] + b) * (
-                        CurrentPos[1] + b))]):
-                    ##                    print("Oh hi there, didn't see you!")
+                        if not(board[a][b] in [' ', ('b' if 'w_' in piece
+                                                     else 'w')]) and
+                                (not('bishop' in piece) or (current_pos[0]+a)
+                                    * (current_pos[0]+a) == (current_pos[1]+b)  # ==
+                                    * (current_pos[1]+b))]):
                     continue
 
-            to_return.append((CurrentPos[0] + coord1, CurrentPos[1] + coord2))
+            to_return.append((current_pos[0] + coord1, current_pos[1] + coord2))
 
-            to_return.append((CurrentPos[0] + coord1, CurrentPos[1] + coord2))
+            to_return.append((current_pos[0] + coord1, current_pos[1] + coord2))
         except IndexError:
             pass
     return to_return
@@ -159,7 +154,7 @@ def move_king(board: list, team, king_pos: tuple) -> dict:
 
 
 def think(board, team):
-    team = 'b_' if team == 'white' else 'w_'
+    team = 'b_' if team == 'black' else 'w_'
     opponent = team_to_opponent(team)
     king_pos_team = get_king(board, team)
     king_pos_opponent = get_king(board, opponent)
@@ -167,6 +162,7 @@ def think(board, team):
     # kill the enemy king
     if check_pos(board, king_pos_opponent, team, king=True):
         return check_pos(board, king_pos_opponent, team, king=True)[0]
+    del king_pos_opponent
 
     # defend my own king
     if check_pos(board, king_pos_team, opponent):
@@ -189,17 +185,20 @@ def think(board, team):
                     fake_board[attack[0]][attack[1]] = ' '
                     if check_pos(board, king_pos_team, opponent):
                         defenders.append((coord1, coord2))
-
-                if check_pos(board, attack, opponent):
-                    # the attacker is defended by another piece
-                    if move_king(board, team, king_pos_team):
-                        # try to move the king if you can
-                        return move_king(board, team, king_pos_team)
+                del coord1, coord2, fake_board
+                if len(defenders) < 0:
+                    if check_pos(board, attack, opponent):
+                        # the attacker is defended by another piece
+                        if move_king(board, team, king_pos_team):
+                            # try to move the king if you can
+                            return move_king(board, team, king_pos_team)
+                        else:
+                            # todo find what piece is best to lose
+                            pass
                     else:
-                        # todo calculate which piece is best to lose
-                        pass
+                        return random.choice(defenders)
                 else:
-                    return random.choice(defenders)
+                    # todo try to block the enemy
             else:
                 return move_king(board, team, king_pos_team)
         else:
