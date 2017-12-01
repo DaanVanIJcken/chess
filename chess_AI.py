@@ -242,26 +242,29 @@ def protect_piece(board: list, team: str, piece: str) -> dict:
                         # the king to be killable
                         defenders.append((coord1, coord2))# clean up
                     del coord1, coord2
-                if check_pos(board, attack, opponent):
-                    # the attacker is defended by another piece
-                    if move_piece(board, team, piece_pos_team):
-                        # try to move the king if you can
-                        return move_piece(board, team, piece_pos_team)
-                    else:
-                        defenders = [{'name': board[defender[0]][defender[0]][2:],
-                                      'coords': defender}
-                                     for defender in defenders]
-                        # find the least important piece
-                        for defender in defenders:
-                            try:
-                                if worse(defender['name'], worst["name"]):
+
+                if len(defenders) > 0:
+                    if check_pos(board, attack, opponent):
+                        # the attacker is defended by another piece
+                        if  move_piece(board, team, piece_pos_team):
+                            # try to move the king if you can
+                            return move_piece(board, team, piece_pos_team)
+                        else:
+                            defenders = [{'name': board[defender[0]][defender[0]][2:],
+                                          'coords': defender}
+                                         for defender in defenders]
+                            # find the least important piece
+
+                            for defender in defenders:
+                                try:
+                                    if worse(defender['name'], worst["name"]):
+                                        worst = defender
+                                except NameError:
                                     worst = defender
-                            except NameError:
-                                worst = defender
-                        return {"from": worst['coords'], "to": attack}
-                else:
-                    # it doesn't matter what piece is used to kill the attacker
-                    return random.choice(defenders)
+                            return {"from": worst['coords'], "to": attack}
+                    else:
+                        # it doesn't matter what piece is used to kill the attacker
+                        return random.choice(defenders)
         else:
             piece_movement = move_piece(board, team, piece_pos_team)
             if piece_movement:
