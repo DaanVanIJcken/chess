@@ -3,7 +3,7 @@
 import random
 
 
-def pos_neg(x):
+def pos_neg(x: float): # or int
     if x > 0:
         return 1
     elif x < 0:
@@ -92,13 +92,13 @@ def possible_moves(current_pos: tuple, board: list) -> list:
                 if any([True
                         for a in range(min(current_pos[0] + coord1,
                                            current_pos[0])
-                                               + (0 if coord1 == 0 else 1),
+                                            + (0 if coord1 == 0 else 1),
                                        max(current_pos[0] + coord1,
                                            current_pos[0])
-                                               + (1 if coord1 == 0 else 0))
+                                            + (1 if coord1 == 0 else 0))
                         for b in range(min(current_pos[1] + coord2,
                                            current_pos[1])
-                                               + (0 if coord2 == 0 else 1),
+                                            + (0 if coord2 == 0 else 1),
                                        max(current_pos[1] + coord2,
                                            current_pos[1]) + (
                                                1 if coord2 == 0 else 0))
@@ -117,15 +117,20 @@ def possible_moves(current_pos: tuple, board: list) -> list:
     return to_return
 
 
-def get_king(board, team: str):
+def get_piece(board: list, team: str, piece: str) -> tuple:
     for i, line in enumerate(board):
         for j, piece in enumerate(line):
-            if piece == 'w_king' if team == 'w_' else piece == 'b_king':
-                king_pos = (i, j)
-                return king_pos
+            if piece != ' ':
+                if piece[:2] == 'w_' if team == 'w_' else piece[:2] == 'b':
+                    if piece[2:] == piece:
+                        piece_pos = (i, j)
+                        return piece_pos
+    else: 
+        return ()
 
 
-def check_pos(board, pos, team, king=False) -> list:  # can team kill what is on pos
+def check_pos(board: list, pos: tuple, team: str, king: bool = False) -> list:
+    # can team kill what is on pos
     routes = []
     for i, line in enumerate(board):
         for j, piece in enumerate(line):
@@ -138,68 +143,168 @@ def check_pos(board, pos, team, king=False) -> list:  # can team kill what is on
     return routes
 
 
-def team_to_opponent(team):
+def team_to_opponent(team: str) -> str:
     return 'b_' if team == 'w_' else 'w_'
 
 
-def move_king(board: list, team, king_pos: tuple) -> dict:
+def move_piece(board: list, team, piece_pos: tuple) -> dict:
     opponent = team_to_opponent(team)
-    for move in possible_moves(king_pos, board):
-        if not check_pos(board, move, opponent):
-            return {"from": king_pos, "to": move}
+    for move in possible_moves(piece_pos, board):
+        fake_board = eval(str(board))
+        fake_board[move["from"][0]][move["from"][1]] = ' '
+        fake_board[move["to"][0]][move["to"][1]] = \
+            board[piece_pos[0]][piece_pos[1]]
+        if not check_pos(fake_board, move[ "to"], opponent):
+            return {"from": piece_pos, "to": move}
     return {}
 
 
-def think(board, team):
+def worse(self: str, other: str):
+    values = {'pawn': 1, "knight": 2, "bishop": 3,"rook": 4, "queen":5,
+              "king": 6}
+    if values[self] < values[other]:
+        return True
+    else:
+        return False
+
+
+def calculate_path(board: list, from_: tuple, to: tuple) -> list[tuple]:
+    piece = board[from_[0]][from_[1]]
+    if from_[0] == to[0]:  # horizontal movement
+        if from_[1] < to[1]:
+            return [(from_[0] + movement, from_[1])
+                    for movement in range(to[0] - from_[0])]
+        else:
+            return [(from_[0] + movement, from_[1])
+                    for movement in range(0, to[0] - from_[0], -1)]
+    elif from_[1] == to[1]:  # vertical movement
+        if to[1] > from_[1]:
+            return [(from_[0], from_[1] + movement)
+                     for movement in range(to[1] - from_[1])]
+        else:
+            return [(from_[0], from_[1] + movement)
+                     for movement in range(0, to[1] - from_[1], -1)]
+    elif abs(to[0] - from_[0]) == abs(to[1] - from_[1]):  # diagonal movement
+        if to[0] > from_[0] and to[1] > from_[1]:
+            return [(from_[0] + movement, from_[1] + movement)
+                    for movement in range(abs(to[0]-from_[0]))]
+        if to[0] > from_[0] and to[1] < from_[1]:
+            return [(from_[0] + movement, from_[1] - movement)
+                    for movement in range(abs(to[0]-from_[0]))]
+        if to[0] < from_[0] and to[1] > from_[1]:
+            return [(from_[0] - movement, from_[1] + movement)
+                    for movement in range(abs(to[0]-from_[0]))]
+        else:  # to[0] < from_[0] and to[1] < from_[1]:
+            return [(from_[0] - movement, from_[1] - movement)
+                    for movement in range(abs(to[0]-from_[0]))]
+    else:
+        return []
+
+
+def protect_piece(board: list, team: str, piece: str) -> dict:
     team = 'b_' if team == 'black' else 'w_'
     opponent = team_to_opponent(team)
-    king_pos_team = get_king(board, team)
-    king_pos_opponent = get_king(board, opponent)
+    piece_pos_team = get_piece(board, team, piece)
+    piece_pos_opponent = get_piece(board, opponent, piece)
 
-    # kill the enemy king
-    if check_pos(board, king_pos_opponent, team, king=True):
-        return check_pos(board, king_pos_opponent, team, king=True)[0]
-    del king_pos_opponent
+    # kill the enemy piece
+    if check_pos(board, piece_pos_opponent, team, king=True):
+        return check_pos(board, piece_pos_opponent, team, king=True)[0]
 
-    # defend my own king
-    if check_pos(board, king_pos_team, opponent):
-        # can my king be killed next turn
-        if len(check_pos(board, king_pos_team, opponent)) == 1:
+    # defend my own piece
+    if check_pos(board, piece_pos_team, opponent):
+        # can my piece be killed next turn
+        if len(check_pos(board, piece_pos_team, opponent)) == 1:
             # my king can only be killed one way.
-            attack = check_pos(board, king_pos_team, opponent)[0]["from"]
-            # from what position can my king be killed
+            attack = check_pos(board, piece_pos_team, opponent)[0]["from"]
+            # from what position can my piece be killed
             if check_pos(board, attack, team):
                 # I can kill whatever is check'ing my king
 
                 # find which pieces can kill the attacker
-                # without opening the king to a new attack
+                # without opening the piece to a new attack
                 defenders = []
-                for attacker in check_pos(board, attack, opponent):
-                    coord1 = attacker['from'][0]
-                    coord2 = attacker['from'][1]
-                    fake_board = eval(str(board))
-                    fake_board[coord1][coord2] = ' '
-                    fake_board[attack[0]][attack[1]] = ' '
-                    if check_pos(board, king_pos_team, opponent):
-                        defenders.append((coord1, coord2))
-                del coord1, coord2, fake_board
-                if len(defenders) < 0:
-                    if check_pos(board, attack, opponent):
-                        # the attacker is defended by another piece
-                        if move_king(board, team, king_pos_team):
-                            # try to move the king if you can
-                            return move_king(board, team, king_pos_team)
-                        else:
-                            # todo find what piece is best to lose
-                            pass
+                for defender in check_pos(board, attack, team):
+                    coord1 = defender['from'][0]
+                    coord2 = defender['from'][1]
+                    if piece != 'king':
+                        # possible moves does not check if this move is clever
+                        # so I have to check it for myself
+                        fake_board = eval(str(board))
+                        fake_board[coord1][coord2] = ' '
+                        fake_board[attack[0]][attack[1]] = ' '
+                        if check_pos(board, piece_pos_team, opponent):
+                            defenders.append((coord1, coord2))
+                        del fake_board
                     else:
-                        return random.choice(defenders)
+                        # this is the king. possible moves already stops me
+                        # from making stupid moves that cause
+                        # the king to be killable
+                        defenders.append((coord1, coord2))# clean up
+                    del coord1, coord2
+                if check_pos(board, attack, opponent):
+                    # the attacker is defended by another piece
+                    if move_piece(board, team, piece_pos_team):
+                        # try to move the king if you can
+                        return move_piece(board, team, piece_pos_team)
+                    else:
+                        defenders = [{'name': board[defender[0]][defender[0]][2:],
+                                      'coords': defender}
+                                     for defender in defenders]
+                        # find the least important piece
+                        for defender in defenders:
+                            try:
+                                if worse(defender['name'], worst["name"]):
+                                    worst = defender
+                            except NameError:
+                                worst = defender
+                        return {"from": worst['coords'], "to": attack}
                 else:
-                    # todo try to block the enemy
-            else:
-                return move_king(board, team, king_pos_team)
+                    # it doesn't matter what piece is used to kill the attacker
+                    return random.choice(defenders)
         else:
-            if move_king(board, team, king_pos_team):
-                # try to move the king if you can
-                return move_king(board, team, king_pos_team)
-            
+            piece_movement = move_piece(board, team, piece_pos_team)
+            if piece_movement:
+                # move the piece if you can
+                return piece_movement
+            else:
+                del piece_movement  # clean up
+                attackers = check_pos(board, piece_pos_team, opponent)
+                attackers_names = [board[attacker[0]][attacker[0]][2:]
+                                   for attacker in attackers]
+                if 'knight' in attackers_names:
+                    return {}  # the knight will kill me anyway
+                paths = [set([calculate_path(board, attacker["from"], piece_pos_team)])
+                         for attacker in attackers]
+                # calculate all paths used by all attackers
+                commons = paths[0]
+
+                for path in paths:
+                    commons = commons & path
+                    # calculate which square
+                    # is used by all attackers
+                if len(commons) == 0:
+                    return {}  # it is impossible to block all
+                    # because they use different routes
+                else:
+                    defenders = []
+                    for point in commons:
+                        for defender in check_pos(board, point, team):
+                            if check_pos(board, piece_pos_team, opponent):
+                                defenders.append({"from": defender["from"],
+                                                  "to": point})
+                    if len(defenders) > 0:
+                        return random.choice(defenders)
+                    else:
+                        del defenders
+                        
+                        
+def think(board: list, team: str) -> dict:
+    king = protect_piece(board, team, 'king')
+    if king:
+        return king
+    del king
+    queen = protect_piece(board, team, 'queen')
+    if queen:
+        return queen
+    del queen
